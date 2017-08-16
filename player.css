@@ -36,11 +36,11 @@
 /* ------------------------------------------------- */
 
 body {
-  background-color: #000;
+  background-color: red;
 }
 
 .player {
-  background-image: url("assets/background.png");
+  /*background-image: url("assets/background.png");*/
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
