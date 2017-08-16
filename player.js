@@ -53,6 +53,7 @@
 var sampleplayer = sampleplayer || {};
 
 
+
 /**
  * <p>
  * Cast player constructor - This does the following:
@@ -73,11 +74,12 @@ var sampleplayer = sampleplayer || {};
  * @export
  */
 sampleplayer.CastPlayer = function(element) {
+
   /**
    * The debug setting to control receiver, MPL and player logging.
    * @private {boolean}
    */
-  this.debug_ = sampleplayer.ENABLE_DEBUG_;
+  this.debug_ = sampleplayer.DISABLE_DEBUG_;
   if (this.debug_) {
     cast.player.api.setLoggerLevel(cast.player.api.LoggerLevel.DEBUG);
     cast.receiver.logger.setLevelValue(cast.receiver.LoggerLevel.DEBUG);
@@ -254,8 +256,6 @@ sampleplayer.CastPlayer = function(element) {
    */
   this.receiverManager_ = cast.receiver.CastReceiverManager.getInstance();
   this.receiverManager_.onReady = this.onReady_.bind(this);
-  this.receiverManager_.onSenderConnected =
-      this.onSenderConnected_.bind(this);
   this.receiverManager_.onSenderDisconnected =
       this.onSenderDisconnected_.bind(this);
   this.receiverManager_.onVisibilityChanged =
@@ -325,8 +325,6 @@ sampleplayer.CastPlayer = function(element) {
   this.mediaManager_.onCancelPreload = this.onCancelPreload_.bind(this);
 };
 
-
-var castingFlag = false;
 
 /**
  * The amount of time in a given state before the player goes idle.
@@ -442,22 +440,9 @@ sampleplayer.ENABLE_DEBUG_ = true;
  */
 sampleplayer.DISABLE_DEBUG_ = false;
 
+
 /**
- * variable to store the content type (audio, video)
- * 
- * created by Suhas
- */
- sampleplayer.contType;
- 
- /**
- * variable to store the content subtype (radio, tv)
- * 
- * created by Suhas
- */
- sampleplayer.contsubType;
- 
-/**
- * Returns t e elementwitsamnhe givena class name
+ * Returns the element with the given class name
  *
  * @param {string} className The class name of the element to return.
  * @return {!Element}
@@ -513,7 +498,6 @@ sampleplayer.CastPlayer.prototype.getPlayer = function() {
  * @export
  */
 sampleplayer.CastPlayer.prototype.start = function() {
-  console.log("start casting");
   this.receiverManager_.start();
 };
 
@@ -527,7 +511,7 @@ sampleplayer.CastPlayer.prototype.start = function() {
  * @export
  */
 sampleplayer.CastPlayer.prototype.preload = function(mediaInformation) {
-  this.log_('preload',mediaInformation);
+  this.log_('preload');
   // For video formats that cannot be preloaded (mp4...), display preview UI.
   if (sampleplayer.canDisplayPreview_(mediaInformation || {})) {
     this.showPreviewMode_(mediaInformation);
@@ -595,7 +579,7 @@ sampleplayer.CastPlayer.prototype.hidePreviewMode_ = function() {
  * @private
  */
 sampleplayer.CastPlayer.prototype.preloadVideo_ = function(mediaInformation) {
-  this.log_('preloadVideo_',mediaInformation);
+  this.log_('preloadVideo_');
   var self = this;
   var url = mediaInformation.contentId;
   var protocolFunc = sampleplayer.getProtocolFunction_(mediaInformation);
@@ -626,13 +610,12 @@ sampleplayer.CastPlayer.prototype.preloadVideo_ = function(mediaInformation) {
  * @export
  */
 sampleplayer.CastPlayer.prototype.load = function(info) {
-  this.log_('onLoad_',info);
+  this.log_('onLoad_');
   clearTimeout(this.idleTimerId_);
   var self = this;
   var media = info.message.media || {};
   var contentType = media.contentType;
   var playerType = sampleplayer.getType_(media);
-  this.log_('playerType_',playerType);
   var isLiveStream = media.streamType === cast.receiver.media.StreamType.LIVE;
   if (!media.contentId) {
     this.log_('Load failed: no content');
@@ -643,7 +626,7 @@ sampleplayer.CastPlayer.prototype.load = function(info) {
   } else {
     this.log_('Loading: ' + playerType);
     self.resetMediaElement_();
-    self.setType_(playerType, isLiveStream, sampleplayer.contType, sampleplayer.contsubType);
+    self.setType_(playerType, isLiveStream);
     var preloaded = false;
     switch (playerType) {
       case sampleplayer.Type.AUDIO:
@@ -712,7 +695,7 @@ sampleplayer.CastPlayer.prototype.maybeSendLoadCompleted_ = function(info) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.resetMediaElement_ = function() {
-//   this.log_('resetMediaElement_',media);
+  this.log_('resetMediaElement_');
   if (this.player_) {
     this.player_.unload();
     this.player_ = null;
@@ -728,7 +711,7 @@ sampleplayer.CastPlayer.prototype.resetMediaElement_ = function() {
  * @private
  */
 sampleplayer.CastPlayer.prototype.loadMetadata_ = function(media) {
-  this.log_('loadMetadata_',media);
+  this.log_('loadMetadata_');
   if (!sampleplayer.isCastForAudioDevice_()) {
     var metadata = media.metadata || {};
     var titleElement = this.element_.querySelector('.media-title');
@@ -739,12 +722,8 @@ sampleplayer.CastPlayer.prototype.loadMetadata_ = function(media) {
 
     var artwork = sampleplayer.getMediaImageUrl_(media);
     if (artwork) {
-      artwork = artwork.trim();
       var artworkElement = this.element_.querySelector('.media-artwork');
       sampleplayer.setBackgroundImage_(artworkElement, artwork);
-    }else{
-      var artworkElement = this.element_.querySelector('.media-artwork');
-      sampleplayer.setBackgroundImage_(artworkElement, './assets/placeholder-audio.jpg');  
     }
   }
 };
@@ -757,7 +736,7 @@ sampleplayer.CastPlayer.prototype.loadMetadata_ = function(media) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.loadPreviewModeMetadata_ = function(media) {
-  this.log_('loadPreviewModeMetadata_',media);
+  this.log_('loadPreviewModeMetadata_');
   if (!sampleplayer.isCastForAudioDevice_()) {
     var metadata = media.metadata || {};
     var titleElement = this.element_.querySelector('.preview-mode-title');
@@ -799,7 +778,7 @@ sampleplayer.CastPlayer.prototype.letPlayerHandleAutoPlay_ = function(info) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.loadAudio_ = function(info) {
-  this.log_('loadAudio_',info);
+  this.log_('loadAudio_');
   this.letPlayerHandleAutoPlay_(info);
   this.loadDefault_(info);
 };
@@ -813,7 +792,7 @@ sampleplayer.CastPlayer.prototype.loadAudio_ = function(info) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.loadVideo_ = function(info) {
-  this.log_('loadVideo_',info);
+  this.log_('loadVideo_');
   var self = this;
   var protocolFunc = null;
   var url = info.message.media.contentId;
@@ -1204,20 +1183,10 @@ sampleplayer.CastPlayer.prototype.setIdleTimeout_ = function(t) {
  * @param {boolean} isLiveStream whether player is showing live content
  * @private
  */
-sampleplayer.CastPlayer.prototype.setType_ = function(type, isLiveStream, contType, contSubtype) {
+sampleplayer.CastPlayer.prototype.setType_ = function(type, isLiveStream) {
   this.log_('setType_: ' + type);
   this.type_ = type;
-  
-  if(contType == "audio"){  
-     this.element_.setAttribute('type', contType);  
-  }else{
-     this.element_.setAttribute('type', type);
-  }
-  
-  if(typeof contSubtype !== 'undefined'){
-      this.element_.setAttribute('sub-type', contSubtype);
-  }
-  
+  this.element_.setAttribute('type', type);
   this.element_.setAttribute('live', isLiveStream.toString());
   var overlay = this.getElementByClass_('.overlay');
   var watermark = this.getElementByClass_('.watermark');
@@ -1310,48 +1279,19 @@ sampleplayer.CastPlayer.prototype.onReady_ = function() {
 
 
 /**
- * Called when a sender Connects from the app. (created by Suhas)
- *
- * @param {cast.receiver.CastReceiverManager.SenderConnectedEvent} event
- * @private
- */
-sampleplayer.CastPlayer.prototype.onSenderConnected_ = function(event) {
-  this.log_('onSenderConnected ',event);
-  this.log_('onSender castingFlag', castingFlag);
-  if(castingFlag){
-    //   this.receiverManager_.stop();
-    //   window.close();
-    // this.receiverManager_.onSenderDisconnected();
-    cast.receiver.CastReceiverManager.SenderDisconnectedEvent(event.senderId, event.userAgent, cast.receiver.system.DisconnectReason.ERROR);
-  }else{
-    castingFlag = true;
-  }
-  // When the last or only sender is connected to a receiver,
-  // tapping Disconnect stops the app running on the receiver.
-//   if (this.receiverManager_.getSenders().length === 0 && event.reason === cast.receiver.system.DisconnectReason.REQUESTED_BY_SENDER) {
-//     this.receiverManager_.stop();
-//     window.close();
-//   }
-};
-
-
-/**
  * Called when a sender disconnects from the app.
  *
  * @param {cast.receiver.CastReceiverManager.SenderDisconnectedEvent} event
  * @private
  */
 sampleplayer.CastPlayer.prototype.onSenderDisconnected_ = function(event) {
-  this.log_('onSenderDisconnected',event);
+  this.log_('onSenderDisconnected');
   // When the last or only sender is connected to a receiver,
   // tapping Disconnect stops the app running on the receiver.
-  castingFlag = false;
-  if (this.receiverManager_.getSenders().length === 0 && event.reason === cast.receiver.system.DisconnectReason.REQUESTED_BY_SENDER) {
-    //this.receiverManager_.stop();
-    window.close();
-  }else{
-      console.log("another device");
-      //this.receiverManager_.stop();
+  if (this.receiverManager_.getSenders().length === 0 &&
+      event.reason ===
+          cast.receiver.system.DisconnectReason.REQUESTED_BY_SENDER) {
+    this.receiverManager_.stop();
   }
 };
 
@@ -1365,7 +1305,7 @@ sampleplayer.CastPlayer.prototype.onSenderDisconnected_ = function(event) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.onError_ = function(error) {
-  this.log_('onError',error);
+  this.log_('onError');
   var self = this;
   sampleplayer.transition_(self.element_, sampleplayer.TRANSITION_DURATION_,
       function() {
@@ -1461,7 +1401,7 @@ sampleplayer.CastPlayer.prototype.customizedStatusCallback_ = function(
  * @private
  */
 sampleplayer.CastPlayer.prototype.onStop_ = function(event) {
-  this.log_('onStop',event);
+  this.log_('onStop');
   this.cancelDeferredPlay_('media is stopped');
   var self = this;
   sampleplayer.transition_(self.element_, sampleplayer.TRANSITION_DURATION_,
@@ -1573,7 +1513,7 @@ sampleplayer.CastPlayer.prototype.onSeekEnd_ = function() {
  * @private
  */
 sampleplayer.CastPlayer.prototype.onVisibilityChanged_ = function(event) {
-  this.log_('onVisibilityChanged',event);
+  this.log_('onVisibilityChanged');
   if (!event.isVisible) {
     this.mediaElement_.pause();
     this.mediaManager_.broadcastStatus(false);
@@ -1606,7 +1546,7 @@ sampleplayer.CastPlayer.prototype.onPreload_ = function(event) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.onCancelPreload_ = function(event) {
-  this.log_('onCancelPreload_',event);
+  this.log_('onCancelPreload_');
   this.hidePreviewMode_();
   return true;
 };
@@ -1620,7 +1560,7 @@ sampleplayer.CastPlayer.prototype.onCancelPreload_ = function(event) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.onLoad_ = function(event) {
-  this.log_('onLoad_',event);
+  this.log_('onLoad_');
   this.cancelDeferredPlay_('new media is loaded');
   this.load(new cast.receiver.MediaManager.LoadInfo(
       /** @type {!cast.receiver.MediaManager.LoadRequestData} */ (event.data),
@@ -1635,7 +1575,7 @@ sampleplayer.CastPlayer.prototype.onLoad_ = function(event) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.onEditTracksInfo_ = function(event) {
-  this.log_('onEditTracksInfo',event);
+  this.log_('onEditTracksInfo');
   this.onEditTracksInfoOrig_(event);
 
   // If the captions are embedded or ttml we need to enable/disable tracks
@@ -1669,7 +1609,7 @@ sampleplayer.CastPlayer.prototype.onEditTracksInfo_ = function(event) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.onMetadataLoaded_ = function(info) {
-  this.log_('onMetadataLoaded',info);
+  this.log_('onMetadataLoaded');
   this.onLoadSuccess_();
   // In the case of ttml and embedded captions we need to load the cues using
   // MPL.
@@ -1701,7 +1641,7 @@ sampleplayer.CastPlayer.prototype.onMetadataLoaded_ = function(info) {
  * @private
  */
 sampleplayer.CastPlayer.prototype.onLoadMetadataError_ = function(event) {
-  this.log_('onLoadMetadataError_',event);
+  this.log_('onLoadMetadataError_');
   var self = this;
   sampleplayer.transition_(self.element_, sampleplayer.TRANSITION_DURATION_,
       function() {
@@ -1858,28 +1798,12 @@ sampleplayer.canDisplayPreview_ = function(media) {
 sampleplayer.getType_ = function(media) {
   var contentId = media.contentId || '';
   var contentType = media.contentType || '';
-  var custMediaType = media.customData.type || '';
   var contentUrlPath = sampleplayer.getPath_(contentId);
-//   if(custMediaType == 'song'){
-//      return sampleplayer.Type.AUDIO; 
-//   }else if(custMediaType == 'video'){
-//      return sampleplayer.Type.VIDEO; 
-//   }
-  /** end **/
   if (contentType.indexOf('audio/') === 0) {
     return sampleplayer.Type.AUDIO;
   } else if (contentType.indexOf('video/') === 0) {
     return sampleplayer.Type.VIDEO;
   } else if (contentType.indexOf('application/x-mpegurl') === 0) {
-        /** modified by suhas **/
-        if(custMediaType == 'song' || custMediaType == 'radio'){
-            sampleplayer.contsubType = custMediaType;
-            sampleplayer.contType = "audio"; 
-        }else if(custMediaType == 'video' || custMediaType == 'tv'){
-            sampleplayer.contsubType = custMediaType;
-            sampleplayer.contType = "video"; 
-        }
-        /** end **/
     return sampleplayer.Type.VIDEO;
   } else if (contentType.indexOf('application/vnd.apple.mpegurl') === 0) {
     return sampleplayer.Type.VIDEO;
@@ -2126,13 +2050,9 @@ sampleplayer.getPath_ = function(url) {
  * @param {string} message to log
  * @private
  */
-sampleplayer.CastPlayer.prototype.log_ = function(message, param) {
+sampleplayer.CastPlayer.prototype.log_ = function(message) {
   if (this.debug_ && message) {
-      if(param){
-          console.log(message, param);
-      }else{
-          console.log(message);
-      }
+    console.log(message);
   }
 };
 
