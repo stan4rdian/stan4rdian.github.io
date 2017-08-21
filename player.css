@@ -36,7 +36,8 @@
 /* ------------------------------------------------- */
 
 body {
-  background-color: red;
+  background-color: #39162e;
+  background: url('./assets/splash_Screen.png');
 }
 
 .player {
